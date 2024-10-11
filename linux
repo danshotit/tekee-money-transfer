@@ -1,0 +1,4 @@
+mkdir send-money-app
+cd send-money-app
+npm init -y
+npm install express body-parser

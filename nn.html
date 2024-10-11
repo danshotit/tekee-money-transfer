@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" type="text/css" href="stylee.css">
+    <title>Audio-Video Synchronization Tool</title>
+</head>
+<body>
+    <input type="file" id="videoFileInput" accept="video/*">
+    <input type="file" id="audioFileInput" accept="audio/*">
+    <button onclick="synchronize()">Synchronize</button>
+    <div id="output"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg/dist/ffmpeg.min.js"></script>
+    <script>
+        async function synchronize() {
+            const videoFile = document.getElementById('videoFileInput').files[0];
+            const audioFile = document.getElementById('audioFileInput').files[0];
+
+            if (!videoFile || !audioFile) {
+                alert('Please select both a video and an audio file.');
+                return;
+            }
+
+            const ffmpeg = createFFmpeg({ log: true });
+            await ffmpeg.load();
+
+            // Convert files to buffers
+            const videoData = await readFile(videoFile);
+            const audioData = await readFile(audioFile);
+
+            ffmpeg.FS('writeFile', 'video.mp4', videoData);
+            ffmpeg.FS('writeFile', 'audio.mp3', audioData);
+
+            // Execute FFmpeg commands for synchronization
+            await ffmpeg.run('-i', 'video.mp4', '-i', 'audio.mp3', '-c:v', 'copy', '-c:a', 'aac', 'output.mp4');
+
+            // Retrieve synchronized output
+            const outputData = ffmpeg.FS('readFile', 'output.mp4');
+            const outputBlob = new Blob([outputData.buffer], { type: 'video/mp4' });
+
+            // Create download link or display in browser
+            const downloadLink = document.createElement('a');
+            downloadLink.href = URL.createObjectURL(outputBlob);
+            downloadLink.download = 'synchronized_video.mp4';
+            downloadLink.innerText = 'Download synchronized video';
+            document.getElementById('output').appendChild(downloadLink);
+        }
+
+        function readFile(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (event) => resolve(event.target.result);
+                reader.onerror = (error) => reject(error);
+                reader.readAsArrayBuffer(file);
+            });
+        }
+    </script>
+</body>
+</html>
